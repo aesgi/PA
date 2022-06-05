@@ -2,7 +2,7 @@ import numpy
 import random
 import math
 import copy
-import requests
+#import requests
 import time
 
 ### ACTION INITIALISATION FOR WATER POMP
@@ -155,7 +155,7 @@ class Policy:
 
 class Agent:
 
-    def __init__(self, t, policy, measures, url):
+    def __init__(self, t, policy, measures, min_measure, max_measure, plant_state):
         self.time = t
         self.policy = policy
         self.learning_iteration = 0
@@ -164,22 +164,21 @@ class Agent:
         # These two are made properties of the Agent class for debugging reasons
         self.action_to_take = numpy.nan
         self.measures = measures
+        self.min_measure = min_measure
+        self.max_measure = max_measure
         self.reward = 0
-        self.url = url
+        self.plant_state = plant_state
 
     def Q_learning_iteration(self):
         # Choose action
         self.action_to_take, explore_exploit = self.policy.mapper(self.state)
         # Take action
-        requests.get(self.url, params={'action_to_take': self.action_to_take.intensity,
-                                       'is_watering': self.action_to_take.intensity > 0})
+        action ={'action_to_take': self.action_to_take.intensity,
+                                       'is_watering': self.action_to_take.intensity > 0}
         # Wait for irrigation action to complete
         time.sleep(24*3600/self.time.day_time_limit)
-        response = requests.get(self.url, params={'q': 'measures'})
+        params={'q': 'measures'}
         self.measures = []
-        if response.status_code == 200:
-            for m in response.json()['measures']:
-                self.measures.append(m)
         reward, next_state = self.observer(self.action_to_take)
         # Update Q-function
         self.policy.value_updater(explore_exploit, reward, reward - self.reward,
@@ -190,17 +189,26 @@ class Agent:
 
     def observer(self, action_taken):
         mean_moisture = numpy.mean(self.measures)
+        
         next_state = State(mean_moisture, self.time.season, self.time.time_of_day)
+
         self.policy.check_add_state(next_state)
-        if self.LAYERS_WATER_LOSS_MEAN > mean_moisture:
-            reward-=1
-            self.policy.heuristic = mean_moisture - self.LAYERS_WATER_LOSS_MEAN
-        elif 2*(self.LAYERS_WATER_LOSS_MEAN) < mean_moisture:
-            reward-=2
-            self.policy.heuristic = 0
-        elif 2*(self.LAYERS_WATER_LOSS_MEAN) > mean_moisture:
-            reward-=2
-            self.policy.heuristic = 0
-        else:
-            reward +=5
+
+        if mean_moisture < self.min_moisture:
+            reward = 1 - self.min_moisture + mean_moisture
+            self.policy.heuristic = mean_moisture - self.min_moisture
+            if self.plant_state == False:
+                reward = 2 - action_taken.intensity/max(self.policy.intensities)
+                self.policy.heuristic = 0
+        elif mean_moisture > self.max_moisture:
+            reward = 1 - mean_moisture + self.max_moisture
+            self.policy.heuristic = mean_moisture - self.max_moisture
+            if self.plant_state == False:
+                reward = 2 - action_taken.intensity/max(self.policy.intensities)
+                self.policy.heuristic = 0
         return reward, next_state
+
+
+
+
+        
