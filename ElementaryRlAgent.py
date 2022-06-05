@@ -167,13 +167,14 @@ class Agent:
         self.min_measure = min_measure
         self.max_measure = max_measure
         self.reward = 0
+        self.action_to_take = numpy.nan
         self.plant_state = plant_state
 
     def Q_learning_iteration(self):
         # Choose action
         self.action_to_take, explore_exploit = self.policy.mapper(self.state)
         # Take action
-        action ={'action_to_take': self.action_to_take.intensity,
+        action = {'action_to_take': self.action_to_take.intensity,
                                        'is_watering': self.action_to_take.intensity > 0}
         # Wait for irrigation action to complete
         time.sleep(24*3600/self.time.day_time_limit)
@@ -194,15 +195,15 @@ class Agent:
 
         self.policy.check_add_state(next_state)
 
-        if mean_moisture < self.min_moisture:
-            reward = 1 - self.min_moisture + mean_moisture
-            self.policy.heuristic = mean_moisture - self.min_moisture
+        if mean_moisture < self.min_measure:
+            reward = 1 - self.min_measure + mean_moisture
+            self.policy.heuristic = mean_moisture - self.min_measure
             if self.plant_state == False:
                 reward = 2 - action_taken.intensity/max(self.policy.intensities)
                 self.policy.heuristic = 0
-        elif mean_moisture > self.max_moisture:
-            reward = 1 - mean_moisture + self.max_moisture
-            self.policy.heuristic = mean_moisture - self.max_moisture
+        elif mean_moisture > self.max_measure:
+            reward = 1 - mean_moisture + self.max_measure
+            self.policy.heuristic = mean_moisture - self.max_measure
             if self.plant_state == False:
                 reward = 2 - action_taken.intensity/max(self.policy.intensities)
                 self.policy.heuristic = 0
