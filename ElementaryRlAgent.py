@@ -103,8 +103,7 @@ class Policy:
 
     def pick_random_action(self):
         # The smaller our action space, the more unbalanced the probability distribution of choosing an action randomly
-        probabilistic_action_space_indices = numpy.random.exponential(
-            math.log2(len(self.intensities))*(1-abs(self.heuristic)), 1000)
+        probabilistic_action_space_indices = numpy.random.exponential(math.log2(len(self.intensities))*(1-abs(self.heuristic)), 1000)
         # We don't want to have zero because that would cause index out of bounds in the case of negative heuristic
         probabilistic_action_space_indices += 0.0001
         probabilistic_action_space_indices = probabilistic_action_space_indices[
@@ -159,13 +158,13 @@ class Agent:
         self.time = t
         self.policy = policy
         self.learning_iteration = 0
+        self.min_measure = min_measure
+        self.max_measure = max_measure
         self.state = State(numpy.mean(measures), "summer", 10)
         self.policy.check_add_state(self.state)
         # These two are made properties of the Agent class for debugging reasons
         self.action_to_take = numpy.nan
         self.measures = measures
-        self.min_measure = min_measure
-        self.max_measure = max_measure
         self.reward = 0
         self.action_to_take = numpy.nan
         self.plant_state = plant_state
@@ -177,9 +176,9 @@ class Agent:
         action = {'action_to_take': self.action_to_take.intensity,
                                        'is_watering': self.action_to_take.intensity > 0}
         # Wait for irrigation action to complete
-        time.sleep(24*3600/self.time.day_time_limit)
+        #time.sleep(24*3600/self.time.day_time_limit)
         params={'q': 'measures'}
-        self.measures = []
+
         reward, next_state = self.observer(self.action_to_take)
         # Update Q-function
         self.policy.value_updater(explore_exploit, reward, reward - self.reward,
@@ -192,6 +191,7 @@ class Agent:
         mean_moisture = numpy.mean(self.measures)
         
         next_state = State(mean_moisture, self.time.season, self.time.time_of_day)
+        #print(next_state)
 
         self.policy.check_add_state(next_state)
 
@@ -207,6 +207,9 @@ class Agent:
             if self.plant_state == False:
                 reward = 2 - action_taken.intensity/max(self.policy.intensities)
                 self.policy.heuristic = 0
+        else:
+            reward = 2 - action_taken.intensity/max(self.policy.intensities)
+            self.policy.heuristic = 0
         return reward, next_state
 
 

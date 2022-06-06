@@ -4,11 +4,11 @@ from matplotlib import pyplot as plt
 
 
 class Soil:
-    all_data = []
-    irrigation_iteration = 0
+    all_data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+    irrigation_iteration = 1
     LAYERS_SIZE = np.array([])
     INITIAL_LAYERS_SIZE = np.array([])
-    NUMBER_OF_LAYERS = 3
+    NUMBER_OF_LAYERS = 1
 
     LAYERS_PENETRATION_MEAN = np.array([])
     LAYERS_PENETRATION_VAR = np.array([])
@@ -86,18 +86,23 @@ class Soil:
     def visualizer(self, time_unit):
         mean_dispatcher = {'day': self.time.day_time_limit, 'month': self.time.day_time_limit*30,
                            'season': self.time.day_time_limit*90, 'time': 1}
+        # N-D array N dimension
+        N = 4
         all_data = np.array(self.all_data)
-        all_data = all_data.reshape((int(self.irrigation_iteration/mean_dispatcher[time_unit]),
-                                     int(mean_dispatcher[time_unit]), self.NUMBER_OF_LAYERS))
-        avg_over_unit = np.mean(all_data, axis=1)
-        time_axis = np.arange(0, all_data.shape[0])
+        n = all_data.size
+#       all_data = all_data.reshape((int(self.irrigation_iteration/mean_dispatcher[time_unit]),
+#                                    int(mean_dispatcher[time_unit]), self.NUMBER_OF_LAYERS))
+        M = n//N
+        all_data = all_data.reshape((N, M))
+        avg_over_unit = np.mean(all_data, axis=0)
+        time_axis = np.arange(0,  all_data.shape[0])
+
         marker = ""
         if len(time_axis) < 100:
             marker = "."
-        for i in range(0, self.NUMBER_OF_LAYERS):
-            plt.plot(time_axis, avg_over_unit[:, i], label='layer '+str(i), marker=marker)
-        avg_of_all_layers = np.mean(avg_over_unit, axis=1)
-        plt.plot(time_axis, avg_of_all_layers, label='avg', marker=marker)
+        plt.plot(time_axis, [0,3,4,2], label='layer1', marker=marker)
+        #avg_of_all_layers = np.mean(avg_over_unit, axis=1)
+        #plt.plot(time_axis, avg_of_all_layers, label='avg', marker=marker)
         plt.xlabel('time')
         plt.ylabel('moisture')
         plt.grid(True)

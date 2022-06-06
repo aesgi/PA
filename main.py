@@ -75,18 +75,19 @@ def interaction():
 def with_agent():
     t = ArtificialTime()
     soil = Soil(t)
-    policy = ElementaryRlAgent.Policy(0.1, 0.01, [0, 10, 20]) # Exemple d'intensité [0, 10, 20] peut être ajuster en 0 et 1
+    policy = ElementaryRlAgent.Policy(0.1, 0.05, [0, 20]) # Exemple d'intensité [0, 10, 20] peut être ajuster en 0 et 1
     agent = ElementaryRlAgent.Agent(t, policy, [0, 1, 2], 0.7, 0.8, True) #exemple de mesures / Vie de la plante.
     while t.month < 2:
         agent.Q_learning_iteration()
-        '''
+
         if agent.learning_iteration % 100 == 0:
-            print(soil)
+            #print(soil)
             print(policy)
+            print("------------------------------------------")
             print(policy.epsilon)
+            print("------------------------------------------")
             input()
-        '''
         t.increase_time()
-    soil.visualizer('day')
+    #soil.visualizer('day')
 
 with_agent()
