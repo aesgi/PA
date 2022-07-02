@@ -1,9 +1,11 @@
 from Soil import Soil
 from Time import ArtificialTime
 import ElementaryRlAgent
-import ElementaryRIAgent_Light
+import ElementaryRIAgentLight
 import numpy
 import copy
+import pickle
+import boto3
 
 
 def interaction():
@@ -73,6 +75,18 @@ def interaction():
     soil.visualizer('day')
 
 
+boto3_session = boto3.session.Session(aws_access_key_id="AKIA2NJC4PBEO3WIEQ6L",aws_secret_access_key="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",region_name="us-east-1")
+s3 = boto3_session.resource('s3')
+object = s3.Bucket('spookydata')
+
+def save(self):
+        Q = {}
+        for state, actions in self.state_action_values.items():
+            Q[str(state)] = {}
+            for action, value in actions.items():
+                Q[str(state)][str(action)] = value
+        return Q
+
 def with_agent():
     t = ArtificialTime()
     soil = Soil(t)
@@ -80,31 +94,41 @@ def with_agent():
     agent = ElementaryRlAgent.Agent(t, policy, [0,0,0], 0.7, 0.8, True) #exemple de mesures / Vie de la plante.
     while t.month < 2:
         agent.Q_learning_iteration()
+       
         if agent.learning_iteration % 100 == 0:
             #print(soil)
             print(policy)
             print("------------------------------------------")
             print(policy.epsilon)
             print("------------------------------------------")
-            input()
+            with open('saved_dictionary_water.pkl', 'wb') as f:
+                pickle.dump(save(policy), f)
+            pass
         t.increase_time()
 #   soil.visualizer('day')
 
-def Agent_Light():
+def AgentLight():
     t = ArtificialTime()
-    policy = ElementaryRIAgent_Light.Policy(0.1, 0.05, [0, 20]),  # gamma, alpha, intensity : 0 & 20 (lighting or not)
-    agent = ElementaryRIAgent_Light.Agent(t, policy, [0,0.5,1], 0.5, 0.9, True) 
+    policy = ElementaryRIAgentLight.Policy(0.1, 0.05, [0, 20])  # gamma, alpha, intensity : 0 & 20 (lighting or not)
+    agent = ElementaryRIAgentLight.Agent(t, policy, [0,0.8,0.7], 0.4, 0.7, True)
     while t.month < 2:
         agent.Q_learning_iteration()
+
         if agent.learning_iteration % 100 == 0:
             print(policy)
             print("------------------------------------------")
             print(policy.epsilon)
             print("------------------------------------------")
-            input()
+            with open('saved_dictionary_light.pkl', 'wb') as f:
+                pickle.dump(save(policy), f)
+            pass
         t.increase_time()
 
 #SOIL
-with_agent()
+#with_agent()
+#object.upload_file("saved_dictionary_water.pkl", 'model/simple_QL_saved.pkl')
+
+
 #LIGHT
-Agent_Light()
+AgentLight()
+object.upload_file("saved_dictionary_light.pkl", 'model/simple_QL_saved_light.pkl')
