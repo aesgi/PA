@@ -1,6 +1,7 @@
 from Soil import Soil
 from Time import ArtificialTime
 import ElementaryRlAgent
+import ElementaryRIAgent_Light
 import numpy
 import copy
 
@@ -75,11 +76,10 @@ def interaction():
 def with_agent():
     t = ArtificialTime()
     soil = Soil(t)
-    policy = ElementaryRlAgent.Policy(0.1, 0.05, [0, 20]) # Exemple d'intensité [0, 10, 20] peut être ajuster en 0 et 1
-    agent = ElementaryRlAgent.Agent(t, policy, [0, 1, 2], 0.7, 0.8, True) #exemple de mesures / Vie de la plante.
+    policy = ElementaryRlAgent.Policy(0.1, 0.05, [0, 20]) # gamma, alpha, intensity : 0 & 20 (watering or not), 
+    agent = ElementaryRlAgent.Agent(t, policy, [0,0,0], 0.7, 0.8, True) #exemple de mesures / Vie de la plante.
     while t.month < 2:
         agent.Q_learning_iteration()
-
         if agent.learning_iteration % 100 == 0:
             #print(soil)
             print(policy)
@@ -88,6 +88,23 @@ def with_agent():
             print("------------------------------------------")
             input()
         t.increase_time()
-    #soil.visualizer('day')
+#   soil.visualizer('day')
 
+def Agent_Light():
+    t = ArtificialTime()
+    policy = ElementaryRIAgent_Light.Policy(0.1, 0.05, [0, 20]),  # gamma, alpha, intensity : 0 & 20 (lighting or not)
+    agent = ElementaryRIAgent_Light.Agent(t, policy, [0,0.5,1], 0.5, 0.9, True) 
+    while t.month < 2:
+        agent.Q_learning_iteration()
+        if agent.learning_iteration % 100 == 0:
+            print(policy)
+            print("------------------------------------------")
+            print(policy.epsilon)
+            print("------------------------------------------")
+            input()
+        t.increase_time()
+
+#SOIL
 with_agent()
+#LIGHT
+Agent_Light()

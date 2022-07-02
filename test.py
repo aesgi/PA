@@ -2,7 +2,7 @@ import numpy
 import random
 import math
 import copy
-import requests
+#import requests
 import time
 
 ### ACTION INITIALISATION FOR WATER POMP
@@ -22,22 +22,46 @@ class Action:
     def __hash__(self):
         return hash(self.intensity)
 
-class State:
-    def __init__(self, moisture, time_of_day):
-        self.moisture = numpy.round(moisture, 2)
-        self.time_of_day = int(time_of_day/60)
+
+### ACTION INITIALISATION FOR LIGHT AJUSTMENTS
+class Action_light:
+    def __init__(self, lighting):
+        self.lighting = int(lighting)
 
     def __eq__(self, other):
-        return self.moisture == other.moisture and self.time_of_day == other.time_of_day
+        return self.lighting == other.lighting
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __str__(self):
-        return str(self.moisture) +str(self.time_of_day)
+        return str(self.lighting)
 
     def __hash__(self):
-        return hash((self.moisture, self.time_of_day))
+        return hash(self.lighting)
+
+class State_light:
+    def __init__(self, light):
+        self.light = numpy.round(light, 2)
+
+
+class State:
+    def __init__(self, moisture, season, time_of_day):
+        self.moisture = numpy.round(moisture, 2)
+        self.season = season
+        self.time_of_day = int(time_of_day/60)
+
+    def __eq__(self, other):
+        return self.moisture == other.moisture and self.season == other.season and self.time_of_day == other.time_of_day
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __str__(self):
+        return str(self.moisture)+" "+self.season+" "+str(self.time_of_day)
+
+    def __hash__(self):
+        return hash((self.moisture, self.time_of_day, self.season))
 
 class Policy:
     state_action_values = {}
@@ -136,7 +160,7 @@ class Agent:
         self.learning_iteration = 0
         self.min_measure = min_measure
         self.max_measure = max_measure
-        self.state = State(numpy.mean(measures), 10)
+        self.state = State(numpy.mean(measures), "summer", 10)
         self.policy.check_add_state(self.state)
         # These two are made properties of the Agent class for debugging reasons
         self.action_to_take = numpy.nan
@@ -155,16 +179,6 @@ class Agent:
         #time.sleep(24*3600/self.time.day_time_limit)
         params={'q': 'measures'}
 
-        self.measures = []
-        #response = requests.get(self.url, params={'q': 'measures'})
-        for m in range(3):
-            self.measures.append(random.randint(0,1))
-        
-        #if response.status_code == 200:
-         #   for m in response.json()['measures']:
-          #      self.measures.append(m)
-        #reward, next_state = self.observer(self.action_to_take)
-
         reward, next_state = self.observer(self.action_to_take)
         # Update Q-function
         self.policy.value_updater(explore_exploit, reward, reward - self.reward,
@@ -174,9 +188,10 @@ class Agent:
         self.learning_iteration += 1
 
     def observer(self, action_taken):
-        mean_moisture = numpy.mean(self.measures )
+        mean_moisture = numpy.mean(self.measures)
         
-        next_state = State(mean_moisture, self.time.time_of_day)
+        next_state = State(mean_moisture, self.time.season, self.time.time_of_day)
+        #print(next_state)
 
         self.policy.check_add_state(next_state)
 
@@ -197,3 +212,7 @@ class Agent:
             self.policy.heuristic = 0
         return reward, next_state
 
+
+
+
+        
