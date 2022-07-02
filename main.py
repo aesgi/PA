@@ -125,8 +125,8 @@ def AgentLight():
         t.increase_time()
 
 #SOIL
-#with_agent()
-#object.upload_file("saved_dictionary_water.pkl", 'model/simple_QL_saved.pkl')
+with_agent()
+object.upload_file("saved_dictionary_water.pkl", 'model/simple_QL_saved.pkl')
 
 
 #LIGHT
