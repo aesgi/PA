@@ -75,7 +75,7 @@ def interaction():
     soil.visualizer('day')
 
 
-boto3_session = boto3.session.Session(aws_access_key_id="AKIA2NJC4PBEO3WIEQ6L",aws_secret_access_key="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",region_name="us-east-1")
+boto3_session = boto3.session.Session(aws_access_key_id="AKIA2NJC4PBEBQ7MD5BD",aws_secret_access_key="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",region_name="us-east-1")
 s3 = boto3_session.resource('s3')
 object = s3.Bucket('spookydata')
 
@@ -90,9 +90,9 @@ def save(self):
 def with_agent():
     t = ArtificialTime()
     soil = Soil(t)
-    policy = ElementaryRlAgent.Policy(0.1, 0.05, [0, 20]) # gamma, alpha, intensity : 0 & 20 (watering or not), 
-    agent = ElementaryRlAgent.Agent(t, policy, [0,0,0], 0.7, 0.8, True) #exemple de mesures / Vie de la plante.
-    while t.month < 2:
+    policy = ElementaryRlAgent.Policy(0.1, 5, [0, 20]) # gamma, alpha, intensity : 0 & 20 (watering or not),
+    agent = ElementaryRlAgent.Agent(t, policy, [0,0,0], 0.1, 0.9, True) #exemple de mesures / Vie de la plante.
+    while t.month < 11:
         agent.Q_learning_iteration()
        
         if agent.learning_iteration % 100 == 0:
@@ -109,9 +109,9 @@ def with_agent():
 
 def AgentLight():
     t = ArtificialTime()
-    policy = ElementaryRIAgentLight.Policy(0.1, 0.05, [0, 20])  # gamma, alpha, intensity : 0 & 20 (lighting or not)
-    agent = ElementaryRIAgentLight.Agent(t, policy, [0,0.8,0.7], 0.4, 0.7, True)
-    while t.month < 2:
+    policy = ElementaryRIAgentLight.Policy(0.05, 1, [0, 20])  # gamma, alpha, intensity : 0 & 20 (lighting or not)
+    agent = ElementaryRIAgentLight.Agent(t, policy, [0,0.5,0.2], 0.1, 0.9, True)
+    while t.month < 11:
         agent.Q_learning_iteration()
 
         if agent.learning_iteration % 100 == 0:
@@ -126,7 +126,7 @@ def AgentLight():
 
 #SOIL
 with_agent()
-object.upload_file("saved_dictionary_water.pkl", 'model/simple_QL_saved.pkl')
+object.upload_file("saved_dictionary_water.pkl", 'model/simple_QL_saved_water.pkl')
 
 
 #LIGHT

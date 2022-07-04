@@ -23,21 +23,21 @@ class Action:
         return hash(self.intensity)
 
 class State:
-    def __init__(self, moisture, time_of_day):
-        self.moisture = numpy.round(moisture, 2)
+    def __init__(self, brightness, time_of_day):
+        self.brightness = numpy.round(brightness, 1)
         self.time_of_day = int(time_of_day/60)
 
     def __eq__(self, other):
-        return self.moisture == other.moisture and self.time_of_day == other.time_of_day
+        return self.brightness == other.brightness and self.time_of_day == other.time_of_day
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __str__(self):
-        return str(self.moisture) +str(self.time_of_day)
+        return str(self.brightness)
 
     def __hash__(self):
-        return hash((self.moisture, self.time_of_day))
+        return hash((self.brightness, self.time_of_day))
 
 class Policy:
     state_action_values = {}
@@ -48,7 +48,7 @@ class Policy:
         self.epsilon = kwargs.get('epsilon', 1)
         # Optimism value says what value to assume for our next state when it's an unknown state with empty actions
         self.optimism_value = kwargs.get('optimism_value', 0)
-        # heuristic tells something about the soil: If it's negative we are below moisture and if positive we are above
+        # heuristic tells something about the soil: If it's negative we are below brightness and if positive we are above
         self.heuristic = kwargs.get('heuristic', 0)
         self.exploit_delta_reward_EMA = 0.1
         # Exponential moving average of the delta rewards for exploration. This is used increase epsilon whenever necessary
@@ -60,14 +60,26 @@ class Policy:
         self.exploit_better_count = 0
 
     def check_add_state(self, state):
-        if state not in self.state_action_values:
+        if len(self.state_action_values.keys()) < 1:
             actions = {}
             for i in self.intensities:
                 actions[Action(i)] = self.optimism_value
-            self.state_action_values[state] = actions
+            self.state_action_values[state.brightness] = actions
+            return
+        for sa in self.state_action_values.keys():
+            if state.brightness == sa:
+                actions = {}
+                for i in self.intensities:
+                    actions[Action(i)] = (self.state_action_values[sa][Action(i)] + self.optimism_value) / 2
+                self.state_action_values[sa] = actions
+                return
+        actions = {}
+        for i in self.intensities:
+            actions[Action(i)] = self.optimism_value
+        self.state_action_values[state.brightness] = actions
 
     def mapper(self, state):
-        actions = self.state_action_values[state]
+        actions = self.state_action_values[state.brightness]
         # with probability 1-epsilon, we will act greedily and exploit
         if random.random() > self.epsilon:
             action_to_take = max(actions, key=actions.get)
@@ -115,9 +127,9 @@ class Policy:
         self.reward_EMV = (1 - self.alpha) * (self.reward_EMV + self.alpha * (delta_reward - self.reward_EMA) ** 2)
         self.reward_EMA = (1-self.alpha)*self.reward_EMA + self.alpha*reward
         # In this algorithm, instead of sum of all possible next state values, a sample is taken
-        max_value_of_next_state = max(self.state_action_values[next_state].values())
-        self.state_action_values[state][action_taken] += self.alpha*(reward +
-             self.gamma*max_value_of_next_state - self.state_action_values[state][action_taken])
+        max_value_of_next_state = max(self.state_action_values[next_state.brightness].values())
+        self.state_action_values[state.brightness][action_taken] += self.alpha*(reward +
+             self.gamma*max_value_of_next_state - self.state_action_values[state.brightness][action_taken])
 
     def __str__(self):
         out_str = ""
@@ -174,21 +186,21 @@ class Agent:
         self.learning_iteration += 1
 
     def observer(self, action_taken):
-        mean_moisture = numpy.mean(self.measures)
+        mean_brightness = numpy.mean(self.measures)
         
-        next_state = State(mean_moisture, self.time.time_of_day)
+        next_state = State(mean_brightness, self.time.time_of_day)
 
         self.policy.check_add_state(next_state)
 
-        if mean_moisture < self.min_measure:
-            reward = 1 - self.min_measure + mean_moisture
-            self.policy.heuristic = mean_moisture - self.min_measure
+        if mean_brightness < self.min_measure:
+            reward = 1 - self.min_measure + mean_brightness
+            self.policy.heuristic = mean_brightness - self.min_measure
             if self.plant_state == False:
                 reward = 2 - action_taken.intensity/max(self.policy.intensities)
                 self.policy.heuristic = 0
-        elif mean_moisture > self.max_measure:
-            reward = 1 - mean_moisture + self.max_measure
-            self.policy.heuristic = mean_moisture - self.max_measure
+        elif mean_brightness > self.max_measure:
+            reward = 1 - mean_brightness + self.max_measure
+            self.policy.heuristic = mean_brightness - self.max_measure
             if self.plant_state == False:
                 reward = 2 - action_taken.intensity/max(self.policy.intensities)
                 self.policy.heuristic = 0

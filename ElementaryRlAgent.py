@@ -24,17 +24,18 @@ class Action:
 
 class State:
     def __init__(self, moisture, time_of_day):
-        self.moisture = numpy.round(moisture, 2)
+        self.moisture = numpy.round_(moisture, decimals = 2)
         self.time_of_day = int(time_of_day/60)
 
     def __eq__(self, other):
-        return self.moisture == other.moisture and self.time_of_day == other.time_of_day
+        return self.moisture == other.moisture
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __str__(self):
-        return str(self.moisture) +str(self.time_of_day)
+        # return str(self.moisture) +str(self.time_of_day)
+        return str(self.moisture)
 
     def __hash__(self):
         return hash((self.moisture, self.time_of_day))
@@ -60,14 +61,28 @@ class Policy:
         self.exploit_better_count = 0
 
     def check_add_state(self, state):
-        if state not in self.state_action_values:
+        #print(self.state_action_values.keys())
+        if len(self.state_action_values.keys()) < 1:
             actions = {}
             for i in self.intensities:
                 actions[Action(i)] = self.optimism_value
-            self.state_action_values[state] = actions
+            self.state_action_values[state.moisture] = actions
+            return
+        for sa in self.state_action_values.keys():
+            if state.moisture == sa:
+                actions = {}
+                for i in self.intensities:
+                    actions[Action(i)] = (self.state_action_values[sa][Action(i)] + self.optimism_value) / 2
+                self.state_action_values[sa] = actions
+                return
+        actions = {}
+        for i in self.intensities:
+            actions[Action(i)] = self.optimism_value
+        self.state_action_values[state.moisture] = actions
+
 
     def mapper(self, state):
-        actions = self.state_action_values[state]
+        actions = self.state_action_values[state.moisture]
         # with probability 1-epsilon, we will act greedily and exploit
         if random.random() > self.epsilon:
             action_to_take = max(actions, key=actions.get)
@@ -115,9 +130,9 @@ class Policy:
         self.reward_EMV = (1 - self.alpha) * (self.reward_EMV + self.alpha * (delta_reward - self.reward_EMA) ** 2)
         self.reward_EMA = (1-self.alpha)*self.reward_EMA + self.alpha*reward
         # In this algorithm, instead of sum of all possible next state values, a sample is taken
-        max_value_of_next_state = max(self.state_action_values[next_state].values())
-        self.state_action_values[state][action_taken] += self.alpha*(reward +
-             self.gamma*max_value_of_next_state - self.state_action_values[state][action_taken])
+        max_value_of_next_state = max(self.state_action_values[next_state.moisture].values())
+        self.state_action_values[state.moisture][action_taken] += self.alpha*(reward +
+             self.gamma*max_value_of_next_state - self.state_action_values[state.moisture][action_taken])
 
     def __str__(self):
         out_str = ""
@@ -159,7 +174,6 @@ class Agent:
         #response = requests.get(self.url, params={'q': 'measures'})
         for m in range(3):
             self.measures.append(random.randint(0,1))
-        
         #if response.status_code == 200:
          #   for m in response.json()['measures']:
           #      self.measures.append(m)
@@ -177,7 +191,6 @@ class Agent:
         mean_moisture = numpy.mean(self.measures )
         
         next_state = State(mean_moisture, self.time.time_of_day)
-
         self.policy.check_add_state(next_state)
 
         if mean_moisture < self.min_measure:
